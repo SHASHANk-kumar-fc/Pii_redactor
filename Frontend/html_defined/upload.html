@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drop</title>
+  <link rel="stylesheet" href="../asset2/css/style.css">
+  <script src="https://kit.fontawesome.com/09ccefc64c.js" crossorigin="anonymous"></script>
+
+</head>
+
+<body>
+  <header style="display: flex;flex-direction: row;height: 80px;">
+    <img style="width: 180px;margin-left: 30px;" src="../asset2/img/logo.png">
+    <div style="flex: 1;margin-left: 780px;" class="header">
+      <nav>
+        <ul style="display: flex; flex-direction: row;gap: 20px;">
+          <li><a href="#">Home</a> </li>
+          <li><a href="#">Pricing</a></li>
+          <li><a href="#">Result</a></li>
+        </ul>
+
+    </div>
+    </nav>
+  </header>
+  <div class="drop-box" id="drop-box">
+    <label for="" id="drop-area">
+      <input type="file" accept=".doc,.docx" id="input-file" hidden>
+      <div class="img-view" id="img-view">
+        <img src="../asset2/img/drag.png">
+        <p>Drag and Drop or Click here <br>to upload doc</p>
+        <span>Upload any .doc/.docx up to 5MB</span>
+      </div>
+    </label>
+
+  </div>
+  <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-top:20px;width:100%;">
+    <button class="Redact" id="redact-btn">Redact your Pii value</button>
+  </div>
+  <script src="../asset2/js/script.js"></script>
+</body>
+</html>

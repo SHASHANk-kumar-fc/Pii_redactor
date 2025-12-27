@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="../asset2/css/style.css">
+</head>
+<body>
+   <header style="display: flex;flex-direction: row;height: 80px;">
+        <img style="width: 180px;margin-left: 30px;" src="../asset2/img/logo.png">
+        <div style="flex: 1;margin-left: 780px;" class="header">
+            <nav>
+               
+        </div>
+        </nav>
+    </header> 
+    <div class="download">
+  <div class="loading_side">
+    <div class="loading_content" id="loading-content">
+      <div class="loader-container">
+        <span class="loader">Redacting</span>
+        <span class="doc-loader"></span>
+      </div>
+    </div>
+    <div class="download-content" id="download-content" style="display: none; justify-content: center; align-items: center; flex-direction: column; text-align: center; width: 100%;">
+      <h2 style="margin-bottom: 20px; color: #000;">Redaction Complete!</h2>
+      <p style="margin-bottom: 30px; color: #666;">Your document has been successfully redacted.</p>
+      <a href="#" id="download-btn" class="download-button">
+        <i class="fa-solid fa-download"></i> Download Redacted Document
+      </a>
+    </div>
+  </div>
+
+  <div class="pii_numbers_side">
+    
+    <div class="pii-counter-default" id="pii-counter-default" style="display: none;">
+      <div class="counter-icon">
+        <i class="fa-solid fa-file-lines"></i>
+      </div>
+      <div class="counter-text">Counting Redacted PII Values..</div>
+    </div>
+    
+  
+    <div class="pii-counter-loading" id="pii-counter-loading" style="display: none;">
+      <div class="counter-icon">
+        <i class="fa-solid fa-shield-halved"></i>
+      </div>
+      <div class="counter-text">Scanning for PII...</div>
+      <div class="counter-number" id="counting-number">0</div>
+      <div class="counter-label">values detected</div>
+    </div>
+    
+
+    <div class="pii-counter-complete" id="pii-counter-complete" style="display: none;">
+      <div class="counter-icon-complete">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+      <div class="counter-number-final" id="final-count">0</div>
+      <div class="counter-label-final">PII Values Redacted</div>
+      <div class="counter-message">Your document is now secure</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://kit.fontawesome.com/09ccefc64c.js" crossorigin="anonymous"></script>
+<script>
+  
+  (function ensureAuth() {
+    try {
+      const hasToken = !!localStorage.getItem('authToken') || localStorage.getItem('isAuthenticated') === 'true';
+      if (!hasToken) {
+        window.location.href = 'main.html';
+      }
+    } catch (_) {}
+  })();
+
+  let countingInterval = null;
+  
+
+  function startCountingAnimation(finalCount) {
+    const countingNumberEl = document.getElementById('counting-number');
+    if (!countingNumberEl) return;
+    
+    let currentCount = 0;
+    const increment = Math.max(1, Math.ceil(finalCount / 30)); 
+    const duration = 2000; 
+    const stepTime = duration / 30;
+    
+    countingInterval = setInterval(() => {
+      currentCount += increment;
+      if (currentCount >= finalCount) {
+        currentCount = finalCount;
+        clearInterval(countingInterval);
+      }
+      countingNumberEl.textContent = currentCount;
+    }, stepTime);
+  }
+  
+  
+  function animateFinalCount(finalCount) {
+    const finalCountEl = document.getElementById('final-count');
+    if (!finalCountEl) return;
+    
+    let currentCount = 0;
+    const increment = Math.max(1, Math.ceil(finalCount / 40)); // Count up in 40 steps
+    const duration = 1500; // 1.5 seconds
+    const stepTime = duration / 40;
+    
+    const finalInterval = setInterval(() => {
+      currentCount += increment;
+      if (currentCount >= finalCount) {
+        currentCount = finalCount;
+        clearInterval(finalInterval);
+      }
+      finalCountEl.textContent = currentCount.toLocaleString();
+    }, stepTime);
+  }
+  
+  function showDownloadButton(fileUrl, piiCount) {
+    const loadingContent = document.getElementById('loading-content');
+    const downloadContent = document.getElementById('download-content');
+    const downloadBtn = document.getElementById('download-btn');
+    const counterDefault = document.getElementById('pii-counter-default');
+    const counterLoading = document.getElementById('pii-counter-loading');
+    const counterComplete = document.getElementById('pii-counter-complete');
+    
+    
+    if (countingInterval) {
+      clearInterval(countingInterval);
+    }
+    
+    
+    if (loadingContent) loadingContent.style.display = 'none';
+    if (counterDefault) counterDefault.style.display = 'none';
+    if (counterLoading) counterLoading.style.display = 'none';
+    
+    
+    if (downloadContent) downloadContent.style.display = 'flex';
+    if (counterComplete) counterComplete.style.display = 'flex';
+    
+    
+    if (downloadBtn && fileUrl) {
+      downloadBtn.href = fileUrl;
+      const fileName = fileUrl.split('/').pop();
+      downloadBtn.download = fileName;
+    }
+    
+   
+    if (piiCount !== undefined && piiCount !== null) {
+      animateFinalCount(parseInt(piiCount) || 0);
+    }
+  }
+  
+  function showCounterLoading(finalCount) {
+    const counterDefault = document.getElementById('pii-counter-default');
+    const counterLoading = document.getElementById('pii-counter-loading');
+    
+    
+    if (counterDefault) counterDefault.style.display = 'none';
+    if (counterLoading) counterLoading.style.display = 'flex';
+    
+   
+    startCountingAnimation(finalCount);
+  }
+  
+ 
+  function pollForCompletion() {
+    const checkInterval = setInterval(() => {
+     
+      const urlParams = new URLSearchParams(window.location.search);
+      let fileUrl = urlParams.get('file');
+      let piiCount = urlParams.get('count');
+      
+      
+      if (fileUrl) {
+        fileUrl = decodeURIComponent(fileUrl);
+      }
+      
+      
+      if (!fileUrl) {
+        fileUrl = localStorage.getItem('redactedFileUrl');
+      }
+      if (!piiCount) {
+        piiCount = localStorage.getItem('piiCount');
+      }
+      
+      const uploadError = sessionStorage.getItem('uploadError');
+      
+      if (uploadError) {
+        clearInterval(checkInterval);
+        alert("Upload failed: " + uploadError);
+        sessionStorage.removeItem('uploadError');
+        sessionStorage.removeItem('pendingUpload');
+       
+        const counterDefault = document.getElementById('pii-counter-default');
+        const counterLoading = document.getElementById('pii-counter-loading');
+        const loadingContent = document.getElementById('loading-content');
+        if (counterDefault) counterDefault.style.display = 'flex';
+        if (counterLoading) counterLoading.style.display = 'none';
+        if (loadingContent) loadingContent.style.display = 'flex';
+        return;
+      }
+      
+      
+      if (fileUrl) {
+        clearInterval(checkInterval);
+        sessionStorage.removeItem('pendingUpload');
+        const finalCount = piiCount ? parseInt(piiCount) : 0;
+        
+        console.log('Backend processing complete! Showing final count and download button');
+        
+        
+        if (finalCount > 0) {
+          showCounterLoading(finalCount);
+          
+          
+          setTimeout(() => {
+            showDownloadButton(fileUrl, finalCount);
+          }, 2000);
+        } else {
+          
+          const counterDefault = document.getElementById('pii-counter-default');
+          const counterLoading = document.getElementById('pii-counter-loading');
+          if (counterDefault) counterDefault.style.display = 'flex';
+          if (counterLoading) counterLoading.style.display = 'none';
+          
+          setTimeout(() => {
+            showDownloadButton(fileUrl, 0);
+          }, 1500);
+        }
+      }
+    }, 500); 
+    setTimeout(() => clearInterval(checkInterval), 300000);
+  }
+  
+  
+  window.addEventListener('load', () => {
+    
+    localStorage.removeItem('redactedFileUrl');
+    localStorage.removeItem('piiCount');
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    let fileUrl = urlParams.get('file');
+    let piiCount = urlParams.get('count');
+    const pendingUpload = sessionStorage.getItem('pendingUpload');
+    
+    
+    if (fileUrl) {
+      fileUrl = decodeURIComponent(fileUrl);
+    }
+    
+  
+    console.log('File URL:', fileUrl);
+    console.log('PII Count:', piiCount);
+    console.log('Pending Upload:', pendingUpload);
+    
+   
+    const loadingContent = document.getElementById('loading-content');
+    const downloadContent = document.getElementById('download-content');
+    const counterDefault = document.getElementById('pii-counter-default');
+    const counterLoading = document.getElementById('pii-counter-loading');
+    const counterComplete = document.getElementById('pii-counter-complete');
+    
+   
+    if (downloadContent) downloadContent.style.display = 'none';
+    if (counterDefault) counterDefault.style.display = 'none';
+    if (counterLoading) counterLoading.style.display = 'none';
+    if (counterComplete) counterComplete.style.display = 'none';
+    
+    
+    if (pendingUpload !== 'true' && fileUrl) {
+      console.log('Processing already complete from URL params, showing results');
+      const finalCount = piiCount ? parseInt(piiCount) : 0;
+      
+      
+      if (finalCount > 0) {
+        showCounterLoading(Math.max(finalCount, 5));
+        setTimeout(() => {
+          showDownloadButton(fileUrl, finalCount);
+        }, 2500);
+      } else {
+        showCounterLoading(10);
+        setTimeout(() => {
+          showDownloadButton(fileUrl, finalCount);
+        }, 2000);
+      }
+      return;
+    }
+    
+    
+    if (pendingUpload === 'true' || !fileUrl) {
+      console.log('Processing in progress, showing loading animations...');
+      
+      
+      if (loadingContent) loadingContent.style.display = 'flex';
+      if (counterDefault) {
+        counterDefault.style.display = 'flex';
+      }
+      
+      pollForCompletion();
+    }
+  });
+  
+  window.addEventListener('message', (event) => {
+    if (event.data.type === 'redactionComplete' && event.data.fileUrl) {
+      showDownloadButton(event.data.fileUrl, event.data.piiCount);
+      localStorage.setItem('redactedFileUrl', event.data.fileUrl);
+      if (event.data.piiCount) {
+        localStorage.setItem('piiCount', event.data.piiCount.toString());
+      }
+    }
+  });
+</script>
+
+</body>
+</html>
