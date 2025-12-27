@@ -1,0 +1,26 @@
+# Bytecode and cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Editor configs
+.vscode/
+.idea/
+
+# Environment & credentials
+.env
+.venv*
+*.db
+*.log
+*.sqlite3
+
+# Secret and sensitive files
+secret.txt
+prompt.txt
+firebase_config/*.json
+signup/serviceAccountKey.json
+
+# Uploaded/generated files
+uploaded_docs/
+redacted_docs/
+
