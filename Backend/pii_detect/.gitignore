@@ -16,7 +16,6 @@ __pycache__/
 
 # Secret and sensitive files
 secret.txt
-prompt.txt
 firebase_config/*.json
 signup/serviceAccountKey.json
 

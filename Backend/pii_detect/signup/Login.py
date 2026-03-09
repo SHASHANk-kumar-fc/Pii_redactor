@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr
-from pii_detect.signup.firebase_config import get_db
+from Backend.pii_detect.signup.firebase_config import get_db
 
 router = APIRouter()
 

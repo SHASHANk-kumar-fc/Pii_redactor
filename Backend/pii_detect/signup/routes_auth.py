@@ -6,8 +6,8 @@ from fastapi.responses import HTMLResponse
 from starlette import status
 
 from pydantic import BaseModel, EmailStr
-from pii_detect.signup.firebase_config import get_db
-from pii_detect.signup.Login import router as login_router
+from Backend.pii_detect.signup.firebase_config import get_db
+from Backend.pii_detect.signup.Login import router as login_router
 
 router = APIRouter()
 
