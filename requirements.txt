@@ -9,3 +9,6 @@ python-multipart
 tiktoken
 pydantic
 requests
+fastapi-mail
+itsdangerous
+email-validator
