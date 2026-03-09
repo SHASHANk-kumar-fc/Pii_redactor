@@ -15,6 +15,8 @@ ENV = os.getenv("ENV", "development")
 logger = logging.getLogger("pii_detect.main")
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+
+os.makedirs("redacted_docs", exist_ok=True)
 app = FastAPI(title="PII Document Upload API", version="1.0.0")
 app.mount("/redacted_docs", StaticFiles(directory="redacted_docs"), name="redacted_docs")
 
