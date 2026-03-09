@@ -3,7 +3,33 @@ const API_BASE  = "https://pii-redactor-3.onrender.com";
 function openLogin() {
   document.getElementById("login-modal").style.display = "flex";
 }
+function runDemo() {
+  window.location.href = "upload.html?demo=true";
+}
+document.addEventListener("DOMContentLoaded", async () => {
 
+  const params = new URLSearchParams(window.location.search);
+
+  if (params.get("demo") === "true") {
+
+    const response = await fetch("../demo/demo_pii.docx");
+    const blob = await response.blob();
+
+    const file = new File([blob], "demo_pii.docx", {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    });
+
+    const inputFile = document.getElementById("input-file");
+
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    inputFile.files = dataTransfer.files;
+
+    document.getElementById("img-view").innerHTML =
+      `<p>demo_pii.docx</p><span>Demo document loaded</span>`;
+  }
+
+});
 function closeLogin() {
   document.getElementById("login-modal").style.display = "none";
 }
