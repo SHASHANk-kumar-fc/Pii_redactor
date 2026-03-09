@@ -6,3 +6,6 @@ openai
 firebase-admin
 python-dotenv
 python-multipart
+tiktoken
+pydantic
+requests
