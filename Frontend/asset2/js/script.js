@@ -1,5 +1,5 @@
-const AUTH_BASE = "http://127.0.0.1:8000"; 
-const API_BASE  = "http://127.0.0.1:8000"; 
+const AUTH_BASE = "https://hide-ai.onrender.com"; 
+const API_BASE  = "https://hide-ai.onrender.com"; 
 
 function openLogin() {
   document.getElementById("login-modal").style.display = "flex";
