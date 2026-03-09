@@ -1,6 +1,5 @@
-const AUTH_BASE = "https://hide-ai.onrender.com"; 
-const API_BASE  = "https://hide-ai.onrender.com"; 
-
+const AUTH_BASE = "https://pii-redactor-3.onrender.com";
+const API_BASE  = "https://pii-redactor-3.onrender.com";
 function openLogin() {
   document.getElementById("login-modal").style.display = "flex";
 }
