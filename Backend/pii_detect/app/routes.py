@@ -4,10 +4,10 @@ from fastapi.responses import JSONResponse
 import os
 
 # 🔁 MODIFIED: added `build_buffer`
-from pii_detect.services.replace_pii_values import convert_pii_in_docx_span, build_buffer
-from pii_detect.services.divide_the_content   import split_text_into_chunks
-from pii_detect.services.communicate_with_llm import detect_pii_from_chunks
-from pii_detect.services.text_conversion import extract_text_from_docx
+from Backend.pii_detect.services.replace_pii_values import convert_pii_in_docx_span, build_buffer
+from Backend.pii_detect.services.divide_the_content   import split_text_into_chunks
+from Backend.pii_detect.services.communicate_with_llm import detect_pii_from_chunks
+from Backend.pii_detect.services.text_conversion import extract_text_from_docx
 
 from difflib import SequenceMatcher  #  ADDED
 
