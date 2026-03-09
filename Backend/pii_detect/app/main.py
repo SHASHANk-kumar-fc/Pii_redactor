@@ -5,7 +5,7 @@ import os
 import logging
 
 from .routes import router
-from pii_detect.signup.routes_auth import router as auth_router
+from Backend.pii_detect.signup.routes_auth import router as auth_router
 from fastapi.staticfiles import StaticFiles
 
 # Environment configuration - example
