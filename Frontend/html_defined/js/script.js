@@ -377,11 +377,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
    
     sessionStorage.setItem('pendingUpload', 'true');
+    localStorage.setItem('pendingUpload', 'true');
     sessionStorage.setItem('uploadFileName', file.name);
     sessionStorage.setItem('uploadTimestamp', Date.now().toString());
   
     localStorage.removeItem('redactedFileUrl');
     localStorage.removeItem('piiCount');
+    localStorage.removeItem('uploadError');
     
     
     const downloadWin = window.open("download.html", "_blank");
@@ -414,14 +416,20 @@ document.addEventListener("DOMContentLoaded", () => {
         localStorage.setItem('uploadSessionId', sessionStorage.getItem('uploadTimestamp') || Date.now().toString());
         sessionStorage.removeItem('pendingUpload');
         sessionStorage.removeItem('uploadError');
+        localStorage.removeItem('pendingUpload');
+        localStorage.removeItem('uploadError');
 
         console.log('Upload completed in background:', fullUrl, piiCount);
         try { downloadWin && downloadWin.postMessage({ type: 'redactionComplete', fileUrl: fullUrl, piiCount }, "*"); } catch (_) {}
       } catch (err) {
         console.error('Upload/Redaction error:', err);
         const message = (err && err.message) ? err.message : "Failed to upload/redact";
+        // sessionStorage isn't shared with download.html tab, so use localStorage + postMessage.
+        localStorage.setItem('uploadError', message);
+        try { downloadWin && downloadWin.postMessage({ type: 'redactionError', message }, "*"); } catch (_) {}
         sessionStorage.setItem('uploadError', message);
         sessionStorage.removeItem('pendingUpload');
+        localStorage.removeItem('pendingUpload');
       }
     })();
   };

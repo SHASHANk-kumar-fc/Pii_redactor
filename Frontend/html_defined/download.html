@@ -183,13 +183,13 @@
         piiCount = localStorage.getItem('piiCount');
       }
       
-      const uploadError = sessionStorage.getItem('uploadError');
+      const uploadError = localStorage.getItem('uploadError');
       
       if (uploadError) {
         clearInterval(checkInterval);
         alert("Upload failed: " + uploadError);
-        sessionStorage.removeItem('uploadError');
-        sessionStorage.removeItem('pendingUpload');
+        localStorage.removeItem('uploadError');
+        localStorage.removeItem('pendingUpload');
        
         const counterDefault = document.getElementById('pii-counter-default');
         const counterLoading = document.getElementById('pii-counter-loading');
@@ -234,14 +234,10 @@
   
   
   window.addEventListener('load', () => {
-    
-    localStorage.removeItem('redactedFileUrl');
-    localStorage.removeItem('piiCount');
-    
     const urlParams = new URLSearchParams(window.location.search);
     let fileUrl = urlParams.get('file');
     let piiCount = urlParams.get('count');
-    const pendingUpload = sessionStorage.getItem('pendingUpload');
+    const pendingUpload = localStorage.getItem('pendingUpload');
     
     
     if (fileUrl) {
@@ -307,6 +303,13 @@
       if (event.data.piiCount) {
         localStorage.setItem('piiCount', event.data.piiCount.toString());
       }
+      localStorage.removeItem('pendingUpload');
+      localStorage.removeItem('uploadError');
+    }
+    if (event.data.type === 'redactionError' && event.data.message) {
+      alert("Upload failed: " + event.data.message);
+      localStorage.setItem('uploadError', event.data.message);
+      localStorage.removeItem('pendingUpload');
     }
   });
 </script>
