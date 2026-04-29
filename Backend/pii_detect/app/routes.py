@@ -2,13 +2,16 @@ import json
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.responses import FileResponse
+from fastapi.responses import StreamingResponse
 import os
+import io
 
 # 🔁 MODIFIED: added `build_buffer`
 from Backend.pii_detect.services.replace_pii_values import convert_pii_in_docx_span, build_buffer
 from Backend.pii_detect.services.divide_the_content   import split_text_into_chunks
 from Backend.pii_detect.services.communicate_with_llm import detect_pii_from_chunks
 from Backend.pii_detect.services.text_conversion import extract_text_from_docx
+from docx import Document
 
 from difflib import SequenceMatcher  #  ADDED
 
@@ -23,19 +26,41 @@ def allowed_file(name: str) -> bool:
 async def get_demo_doc():
     """
     Returns a demo .docx file so the frontend can auto-load it after login.
-    Configure via DEMO_DOC_PATH; defaults to a Windows Downloads path.
+    If DEMO_DOC_PATH exists, serves it. Otherwise generates a demo docx on the fly
+    (works on Render, where local Windows paths don't exist).
     """
-    demo_path = os.getenv("DEMO_DOC_PATH", r"C:\Users\HP\Downloads\demo.docx")
-    if not os.path.exists(demo_path):
-        raise HTTPException(404, f"Demo document not found at: {demo_path}")
-    if not allowed_file(demo_path):
-        raise HTTPException(400, "Demo document must be .doc or .docx")
+    demo_path = os.getenv("DEMO_DOC_PATH")
+    if demo_path:
+        if not os.path.exists(demo_path):
+            raise HTTPException(404, f"Demo document not found at: {demo_path}")
+        if not allowed_file(demo_path):
+            raise HTTPException(400, "Demo document must be .doc or .docx")
+        filename = os.path.basename(demo_path)
+        return FileResponse(
+            demo_path,
+            filename=filename,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )
 
-    filename = os.path.basename(demo_path)
-    return FileResponse(
-        demo_path,
-        filename=filename,
+    doc = Document()
+    doc.add_heading("Hide.Ai Demo Document", level=1)
+    doc.add_paragraph("This document contains sample PII values for testing redaction.")
+    doc.add_paragraph("Name: Shashank Kumar")
+    doc.add_paragraph("Email: shashankfc8@gmail.com")
+    doc.add_paragraph("Phone: +91 9876543210")
+    doc.add_paragraph("Address: 221B Baker Street, London")
+    doc.add_paragraph("ID: A123456789")
+    doc.add_paragraph("Date of Birth: 2001-01-01")
+
+    buf = io.BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+
+    headers = {"Content-Disposition": 'attachment; filename="demo.docx"'}
+    return StreamingResponse(
+        buf,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers=headers,
     )
 
 @router.post("/upload-doc/")
