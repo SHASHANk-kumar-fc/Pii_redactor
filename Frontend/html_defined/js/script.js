@@ -1,14 +1,74 @@
-const AUTH_BASE = "https://pii-redactor-3.onrender.com";
-const API_BASE  = "https://pii-redactor-3.onrender.com";
+const REMOTE_BASE = "https://pii-redactor-3.onrender.com";
+
+// Deployed backend only (no localhost routing).
+const AUTH_BASE = REMOTE_BASE;
+const API_BASE = REMOTE_BASE;
+
+async function fetchWithFallback(path, init) {
+  const resp = await fetch(`${REMOTE_BASE}${path}`, init);
+  return resp;
+}
+
+// Offline demo credentials (frontend-only).
+// This lets you test the UI flow without Firebase/auth setup.
+const DUMMY_LOGIN = {
+  email: "demo@hide.ai",
+  password: "demo12345"
+};
+
+const CRED_STORAGE_KEY = "savedCredentials";
+const PENDING_DEMO_KEY = "pendingDemoAfterLogin";
+
+function getSavedCredentials() {
+  try {
+    const raw = localStorage.getItem(CRED_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function setSavedCredentials(creds) {
+  try {
+    if (!creds) localStorage.removeItem(CRED_STORAGE_KEY);
+    else localStorage.setItem(CRED_STORAGE_KEY, JSON.stringify(creds));
+  } catch (_) {}
+}
+
 function openLogin() {
   document.getElementById("login-modal").style.display = "flex";
+  try {
+    const creds = getSavedCredentials();
+    const emailEl = document.getElementById("login-email");
+    const passEl = document.getElementById("login-password");
+    const rememberEl = document.getElementById("remember-credentials");
+
+    if (creds && creds.email) {
+      if (emailEl) emailEl.value = creds.email || "";
+      if (passEl) passEl.value = creds.password || "";
+      if (rememberEl) rememberEl.checked = true;
+      return;
+    }
+
+    // Default: prefill demo credentials so user can just click Submit.
+    if (emailEl && !emailEl.value) emailEl.value = DUMMY_LOGIN.email;
+    if (passEl && !passEl.value) passEl.value = DUMMY_LOGIN.password;
+    if (rememberEl && rememberEl.checked === false) rememberEl.checked = true;
+  } catch (_) {}
 }
 function runDemo() {
-  window.location.href = "upload.html?demo=true";
+  if (isLoggedIn()) {
+    window.location.href = "upload.html?demo=local";
+    return;
+  }
+  try { sessionStorage.setItem(PENDING_DEMO_KEY, "true"); } catch (_) {}
+  openLogin();
 }
 document.addEventListener("DOMContentLoaded", async () => {
 
   const params = new URLSearchParams(window.location.search);
+  const inputFile = document.getElementById("input-file");
+  const imgView = document.getElementById("img-view");
 
   if (params.get("demo") === "true") {
 
@@ -19,15 +79,57 @@ document.addEventListener("DOMContentLoaded", async () => {
       type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     });
 
-    const inputFile = document.getElementById("input-file");
-
     const dataTransfer = new DataTransfer();
     dataTransfer.items.add(file);
     inputFile.files = dataTransfer.files;
 
-    document.getElementById("img-view").innerHTML =
+    imgView.innerHTML =
       `<p>demo_pii.docx</p><span>Demo document loaded</span>`;
   }
+
+  if (params.get("demo") === "local") {
+    const response = await fetchWithFallback(`/demo-doc`);
+    const blob = await response.blob();
+    const disposition = response.headers.get("content-disposition") || "";
+    const match = disposition.match(/filename="?([^"]+)"?/i);
+    const name = match?.[1] || "demo.docx";
+
+    const file = new File([blob], name, {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    });
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    inputFile.files = dataTransfer.files;
+    imgView.innerHTML =
+      `<p>${name}</p><span>Demo document loaded</span>`;
+  }
+
+  // If user logged in via demo credentials, auto-load demo.docx by default.
+  try {
+    const hasFile = !!(inputFile && inputFile.files && inputFile.files.length);
+    if (!hasFile) {
+      const userRaw = localStorage.getItem("authUser");
+      const user = userRaw ? JSON.parse(userRaw) : null;
+      if (user && user.demo === true && inputFile && imgView) {
+        const response = await fetchWithFallback(`/demo-doc`).catch(() => null);
+        if (response && response.ok) {
+          const blob = await response.blob();
+          const disposition = response.headers.get("content-disposition") || "";
+          const match = disposition.match(/filename="?([^"]+)"?/i);
+          const name = match?.[1] || "demo.docx";
+          const file = new File([blob], name, {
+            type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          });
+          const dataTransfer = new DataTransfer();
+          dataTransfer.items.add(file);
+          inputFile.files = dataTransfer.files;
+          imgView.innerHTML = `<p>${name}</p><span>Demo document loaded</span>`;
+        } else {
+          imgView.innerHTML = `<p>Demo document</p><span style="color:#b00020;">Could not auto-load demo.docx (backend not reachable)</span>`;
+        }
+      }
+    }
+  } catch (_) {}
 
 });
 function closeLogin() {
@@ -38,12 +140,33 @@ async function handleLogin(e) {
   if (e && e.preventDefault) e.preventDefault();
   const email = document.getElementById("login-email").value;
   const password = document.getElementById("login-password").value;
+  const remember = document.getElementById("remember-credentials");
   const error = document.getElementById("login-error");
   const spinner = document.getElementById("login-spinner");
   const btn = document.getElementById("login-submit-btn");
 
   if (spinner) spinner.style.display = "inline-block";
   if (btn) { btn.disabled = true; btn.style.display = "none"; }
+
+  // Demo login path (no network).
+  if ((email || "").trim().toLowerCase() === DUMMY_LOGIN.email && password === DUMMY_LOGIN.password) {
+    try {
+      if (remember && remember.checked) setSavedCredentials({ email, password });
+      else setSavedCredentials(null);
+    } catch (_) {}
+    try {
+      localStorage.setItem('isAuthenticated', 'true');
+      localStorage.setItem('authUser', JSON.stringify({ email, name: "Demo User", demo: true }));
+    } catch (_) {}
+
+    let goToDemo = false;
+    try {
+      goToDemo = sessionStorage.getItem(PENDING_DEMO_KEY) === "true";
+      sessionStorage.removeItem(PENDING_DEMO_KEY);
+    } catch (_) {}
+    window.location.href = goToDemo ? "upload.html?demo=local" : "upload.html";
+    return;
+  }
 
   const bases = [AUTH_BASE];
   let lastErr;
@@ -57,6 +180,11 @@ async function handleLogin(e) {
       const result = await response.json();
       if (response.ok) {
         try {
+          if (remember && remember.checked) setSavedCredentials({ email, password });
+          else setSavedCredentials(null);
+        } catch (_) {}
+
+        try {
           const token = result.token || result.access_token || result.jwt || null;
           if (token) {
             localStorage.setItem('authToken', token);
@@ -67,7 +195,12 @@ async function handleLogin(e) {
             localStorage.setItem('authUser', JSON.stringify(result.user || { email }));
           }
         } catch (_) {}
-        window.location.href = "upload.html";
+        let goToDemo = false;
+        try {
+          goToDemo = sessionStorage.getItem(PENDING_DEMO_KEY) === "true";
+          sessionStorage.removeItem(PENDING_DEMO_KEY);
+        } catch (_) {}
+        window.location.href = goToDemo ? "upload.html?demo=local" : "upload.html";
         return;
       }
       error.style.display = "block";
@@ -206,6 +339,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const inputFile = document.getElementById("input-file");
   const imgView = document.getElementById("img-view");
   const redactBtn = document.getElementById("redact-btn") || document.querySelector(".Redact");
+  const previewBtn = document.getElementById("preview-btn");
 
   if (!dropArea || !inputFile || !imgView || !redactBtn) return;
 
@@ -256,40 +390,81 @@ document.addEventListener("DOMContentLoaded", () => {
     const form = new FormData();
     form.append("file", file, file.name);
 
-    fetch(`${API_BASE}/upload-doc/`, {
-      method: "POST",
-      body: form
-    })
-    .then(resp => {
-      if (!resp.ok) {
-        return resp.json().then(data => {
-          throw new Error(data.detail || "Upload failed");
-        });
+    (async () => {
+      try {
+        const resp = await fetchWithFallback(`/upload-doc/`, { method: "POST", body: form });
+        if (!resp.ok) {
+          let msg = "Upload failed";
+          try {
+            const data = await resp.json();
+            msg = data.detail || msg;
+          } catch (_) {}
+          throw new Error(msg);
+        }
+        const data = await resp.json();
+        const url = data.redacted_url;
+        const apiOrigin = (() => {
+          try { return new URL(resp.url).origin; } catch (_) { return API_BASE; }
+        })();
+        const fullUrl = `${apiOrigin}${url}`;
+        const piiCount = data.pii_count !== undefined ? data.pii_count : 0;
+
+        localStorage.setItem('redactedFileUrl', fullUrl);
+        localStorage.setItem('piiCount', piiCount.toString());
+        localStorage.setItem('uploadSessionId', sessionStorage.getItem('uploadTimestamp') || Date.now().toString());
+        sessionStorage.removeItem('pendingUpload');
+        sessionStorage.removeItem('uploadError');
+
+        console.log('Upload completed in background:', fullUrl, piiCount);
+        try { downloadWin && downloadWin.postMessage({ type: 'redactionComplete', fileUrl: fullUrl, piiCount }, "*"); } catch (_) {}
+      } catch (err) {
+        console.error('Upload/Redaction error:', err);
+        const message = (err && err.message) ? err.message : "Failed to upload/redact";
+        sessionStorage.setItem('uploadError', message);
+        sessionStorage.removeItem('pendingUpload');
       }
-      return resp.json();
-    })
-    .then(data => {
-      const url = data.redacted_url;
-      const fullUrl = `${API_BASE}${url}`;
-      const piiCount = data.pii_count !== undefined ? data.pii_count : 0;
-      
-      
-      localStorage.setItem('redactedFileUrl', fullUrl);
-      localStorage.setItem('piiCount', piiCount.toString());
-      localStorage.setItem('uploadSessionId', sessionStorage.getItem('uploadTimestamp') || Date.now().toString());
-      sessionStorage.removeItem('pendingUpload');
-      sessionStorage.removeItem('uploadError');
-      
-      console.log('Upload completed in background:', fullUrl, piiCount);
-      
-      try { downloadWin && downloadWin.postMessage({ type: 'redactionComplete', fileUrl: fullUrl, piiCount }, "*"); } catch (_) {}
-    })
-    .catch(err => {
-      console.error('Upload/Redaction error:', err);
-      sessionStorage.setItem('uploadError', err.message || "Failed to upload/redact");
-      sessionStorage.removeItem('pendingUpload');
-    });
+    })();
   };
 
   redactBtn.addEventListener("click", uploadDoc);
+
+  const modal = document.getElementById("preview-modal");
+  const content = document.getElementById("preview-content");
+  const close1 = document.getElementById("preview-close");
+  const close2 = document.getElementById("preview-close-2");
+  const hideModal = () => { if (modal) modal.style.display = "none"; };
+  if (close1) close1.addEventListener("click", hideModal);
+  if (close2) close2.addEventListener("click", hideModal);
+  if (modal) modal.addEventListener("click", (e) => { if (e.target === modal) hideModal(); });
+
+  const renderPreview = async () => {
+    const file = inputFile.files && inputFile.files[0];
+    if (!file) { alert("Please select a document first."); return; }
+    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+
+    if (!modal || !content) return;
+    modal.style.display = "flex";
+    content.innerHTML = `<p style="color:#444;">Loading preview…</p>`;
+
+    if (ext !== ".docx") {
+      content.innerHTML = `<p style="color:#b00020;"><b>Preview is available for .docx only.</b> You can still redact .doc files.</p>`;
+      return;
+    }
+
+    try {
+      const ab = await file.arrayBuffer();
+      if (!window.mammoth || !window.mammoth.convertToHtml) {
+        content.innerHTML = `<p style="color:#b00020;"><b>Preview library failed to load.</b></p>`;
+        return;
+      }
+      const result = await window.mammoth.convertToHtml({ arrayBuffer: ab });
+      const html = result?.value || "<p>(No preview content)</p>";
+      content.innerHTML = `<div style="line-height:1.55;">${html}</div>`;
+    } catch (err) {
+      console.error("Preview error:", err);
+      content.innerHTML = `<p style="color:#b00020;"><b>Failed to render preview.</b> ${String(err?.message || err)}</p>`;
+    }
+  };
+
+  if (previewBtn) previewBtn.addEventListener("click", renderPreview);
 });

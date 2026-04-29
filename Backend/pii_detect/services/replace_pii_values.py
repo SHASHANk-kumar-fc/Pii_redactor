@@ -73,13 +73,13 @@ def convert_pii_in_docx_span(
         score = SequenceMatcher(None, found, val).ratio()
 
         if score >= 0.9:
-            print(f"✅ Fuzzy match OK: '{val}' ~ '{found}' at {start}-{end} (score={score:.2f})")
+            print(f"Fuzzy match OK: '{val}' ~ '{found}' at {start}-{end} (score={score:.2f})")
             for i in range(start, end):
                 if i not in masked:
                     buf[i] = MASK_CHAR
                     masked.add(i)
         else:
-            print(f"⚠️ Skipped: '{val}' did not match buffer slice '{found}' (score={score:.2f})")
+            print(f"Skipped: '{val}' did not match buffer slice '{found}' (score={score:.2f})")
 
     masked_text = "".join(buf)
 
@@ -92,7 +92,7 @@ def convert_pii_in_docx_span(
         masked_segment = masked_text[pos: pos + ln]
 
         if original and original != masked_segment:
-            print(f"🔧 Updating run: '{original}' → '{masked_segment}'")
+            print(f"Updating run: '{original}' -> '{masked_segment}'")
 
             # ⚠️ Clear any child XML nodes like field codes or bookmarks
             for child in run._r.xpath("*"):
@@ -102,7 +102,7 @@ def convert_pii_in_docx_span(
             run.text = masked_segment
 
     doc.save(dst)
-    print("✅ Span-based redacted file saved to:", dst)
+    print("Span-based redacted file saved to:", dst)
     pii_values = [s["value"] for s in spans if isinstance(s.get("value"), str)]
     if pii_values:
         redact_text_in_textboxes(dst, pii_values)

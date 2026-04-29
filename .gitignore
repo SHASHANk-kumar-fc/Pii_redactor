@@ -1,0 +1,15 @@
+## Python
+__pycache__/
+*.py[cod]
+
+## Logs
+*.log
+
+## Local env
+.env
+.venv*/
+
+## Generated / uploaded docs
+uploaded_docs/
+redacted_docs/
+

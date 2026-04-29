@@ -23,7 +23,7 @@ def redact_text_in_textboxes(docx_path: str, pii_values: list[str]):
             if t.text:
                 for pii in pii_values:
                     if pii in t.text:
-                        print(f"🔧 Redacting textbox content: '{pii}'")
+                        print(f"Redacting textbox content: '{pii}'")
                         t.text = t.text.replace(pii, "X" * len(pii))
                         redacted_count += 1
 
@@ -37,4 +37,4 @@ def redact_text_in_textboxes(docx_path: str, pii_values: list[str]):
                 zf.write(full, arcname=arcname)
 
     shutil.rmtree(temp_dir)
-    print(f"✅ Redacted {redacted_count} matches in textboxes.")
+    print(f"Redacted {redacted_count} matches in textboxes.")

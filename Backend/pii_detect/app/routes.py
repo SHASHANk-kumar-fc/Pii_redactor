@@ -1,6 +1,7 @@
 import json
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse
 import os
 
 # 🔁 MODIFIED: added `build_buffer`
@@ -16,6 +17,26 @@ ALLOWED_EXTENSIONS = {".doc", ".docx"}
 
 def allowed_file(name: str) -> bool:
     return os.path.splitext(name)[1].lower() in ALLOWED_EXTENSIONS
+
+
+@router.get("/demo-doc")
+async def get_demo_doc():
+    """
+    Returns a demo .docx file so the frontend can auto-load it after login.
+    Configure via DEMO_DOC_PATH; defaults to a Windows Downloads path.
+    """
+    demo_path = os.getenv("DEMO_DOC_PATH", r"C:\Users\HP\Downloads\demo.docx")
+    if not os.path.exists(demo_path):
+        raise HTTPException(404, f"Demo document not found at: {demo_path}")
+    if not allowed_file(demo_path):
+        raise HTTPException(400, "Demo document must be .doc or .docx")
+
+    filename = os.path.basename(demo_path)
+    return FileResponse(
+        demo_path,
+        filename=filename,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    )
 
 @router.post("/upload-doc/")
 async def upload_doc(file: UploadFile = File(...)):
@@ -61,7 +82,7 @@ async def upload_doc(file: UploadFile = File(...)):
             search_from = pos + len(chunk_text)
 
         spans = global_spans
-        print("⏬ Spans being sent to redactor:")
+        print("Spans being sent to redactor:")
         print(json.dumps(spans, indent=2))
 
         if not spans:

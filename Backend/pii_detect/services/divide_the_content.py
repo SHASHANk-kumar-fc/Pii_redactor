@@ -19,7 +19,7 @@ def split_text_into_chunks(text: str,
         chunk_txt = tokenizer.decode(tokens[tok_start:tok_end])
 
         chunks.append({"text": chunk_txt, "offset": char_start})
-        print(f"✅ Chunk {len(chunks)} — tokens {tok_start}:{tok_end}  chars {char_start}:{char_start+len(chunk_txt)}")
+        print(f"Chunk {len(chunks)} - tokens {tok_start}:{tok_end} chars {char_start}:{char_start+len(chunk_txt)}")
 
         if tok_end == total_tok:
             break
