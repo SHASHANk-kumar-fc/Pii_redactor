@@ -51,7 +51,7 @@
 
 | Layer | Technology |
 | :--- | :--- |
-| **Frontend** | HTML, CSS, JavaScript |
+| **Frontend** | React, TypeScript, Vite |
 | **Backend** | FastAPI |
 | **AI** | OpenAI GPT |
 | **Database** | Firebase Realtime Database |
@@ -63,20 +63,16 @@
 ```text
 hide-ai
 │
-├── frontend
-│   ├── main.html
-│   ├── home.html
-│   ├── upload.html
-│   ├── download.html
-│   ├── style.css
-│   └── script.js
+├── frontend-app/          # React + TypeScript (Vite)
+│   ├── src/
+│   └── dist/              # production build (served by FastAPI)
 │
-├── pii_detect
-│   ├── text_conversion.py
-│   ├── divide_the_content.py
-│   ├── communicate_with_llm.py
-│   ├── replace_pii_values.py
-│   └── redact_textboxes_only.py
+├── Backend/pii_detect/
+│   ├── app/
+│   │   ├── main.py
+│   │   └── routes.py
+│   ├── services/
+│   └── signup/
 ```
 ## 🛠️ Redaction Pipeline
 
@@ -157,10 +153,18 @@ git clone https://github.com/yourusername/hide-ai.git
 cd hide-ai
 ```
 
-### Install dependencies
+### Install backend dependencies
 
 ```bash
 pip install -r requirements.txt
+```
+
+### Install frontend dependencies
+
+```bash
+cd frontend-app
+npm install
+cd ..
 ```
 
 ### Setup environment variables
@@ -171,21 +175,31 @@ Create `.env`
 OPENAI_API_KEY=your_api_key
 ```
 
-### Run backend
+### Build frontend & run backend
 
 ```bash
-uvicorn main:app --reload
+cd frontend-app
+npm run build
+cd ..
+uvicorn Backend.pii_detect.app.main:app --reload
 ```
 
-### Open frontend
+Open **http://127.0.0.1:8000** in your browser. FastAPI serves the React app and API from the same origin.
 
-Open:
+### Frontend development (optional)
 
+Run the Vite dev server with hot reload while the API runs on port 8000:
+
+```bash
+# Terminal 1
+uvicorn Backend.pii_detect.app.main:app --reload
+
+# Terminal 2
+cd frontend-app
+npm run dev
 ```
-main.html
-```
 
-in your browser.
+Open **http://localhost:5173** — API requests are proxied to port 8000.
 
 ---
 

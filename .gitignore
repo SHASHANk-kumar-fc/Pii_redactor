@@ -13,3 +13,7 @@ __pycache__/
 uploaded_docs/
 redacted_docs/
 
+## Node
+node_modules/
+frontend-app/dist/
+
