@@ -9,9 +9,6 @@
 
 ## 🚀 Demo
 
-### Landing Page
-<img width="100%" alt="Landing Page" src="https://github.com/user-attachments/assets/ec90a220-e89b-40c9-a97a-e4db564ca3b7" />
-
 ### Main Page
 <img width="100%" alt="Main Page 1" src="https://github.com/user-attachments/assets/0ee4a831-b406-4eb8-8a75-31840054095f" />
 <img width="100%" alt="Main Page 2" src="https://github.com/user-attachments/assets/7751b9b5-81cd-4fd5-9cc0-2ec33ebef9d8" />
